@@ -1,0 +1,31 @@
+what a convoluted way to try and get in to a not so public splattering on the gpt4all pages chat!
+im stuart, they call me mac as in macguyver.  i have been in to tech since aged 8 and now hitting 45 this year and this whole AGI scene has me pumped.
+
+i have spent the last 20 years in IT and Tech so believe me when i tell you that going to this length to say hi is not the norm.
+
+what i noticed was that reading your replies and text that you seem to be of the same mind and i wondered what your interest is if its professional or amateur etc 
+and if you have found a distinct lack of friends in the scene either due to most people having no clue or just the fact that its all relatively new to some people 
+even though others have had eyes on ML for a decade.
+
+i have now spent more than 20 hours and cannot compile this damn code either.
+
+i wondered if you would perhaps have the time to confer on this one time.
+
+i think my problem may be that i installed all the prereqs for compile of UE5 from source so i have a lot of shit on my system that may confuse things in the path.
+
+i am not familiar with qt creator or v studio 2022 but it makes perfect sense what you said.
+
+you try to compile or build using the community qt creator then migrate the files to the 2022 ide or you simply tell QT to use vs 2022?
+
+i sopecifically read somewhere about NOT using or deselecting MSVC which is how you said you got it to work.
+
+anyway, nice to meet you and thanks for the hekp over there.  feel free to ignore this pull request.
+i simply wanted to reach out since i think in these new times with this new technology we could all do with 
+finding new friends like the ones we had when we were 8 and first imagined AI talking androids haha.
+
+drop something in to macguyversmusic@gmail thats also my reddit handle.
+maybe we can dm through reddit for a convo at some point.
+
+i will remove this in a couple of days
+
+Mac
