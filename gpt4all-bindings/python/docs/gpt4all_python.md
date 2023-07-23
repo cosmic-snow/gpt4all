@@ -109,15 +109,15 @@ To interact with GPT4All responses as the model generates, use the `streaming=Tr
   - [temp 0 means deterministic]
 - [other parameters can have an influence, too]
 
-The three most important parameters influencing generation are Temperature (`temp`), Top-P and Top-K. In a nutshell,
-during the process of selecting the next token, not just one or a few are considered, but every single one is given a
-probability. Then through the three parameters, the field of candidates is influenced:
+The three most influential parameters in generation are Temperature (`temp`), Top-p (`top_p`) and Top-K (`top_k`). In a
+nutshell, during the process of selecting the next token, not just one or a few are considered, but every single one is
+given a probability. Through the three parameters, the field of candidates can be changed.
 
-- Top-P and Top-K both narrow the field:
+- Top-p and Top-K both narrow the field:
     - **Top-K** simply limits the candidates to a fixed number, after sorting by probability. [TODO: how to disable?] 
-    - **Top-P** selects tokens by total probability. E.g. a value of 0.8 means "include the best tokens, whose accumulated
+    - **Top-p** selects tokens by total probability. E.g. a value of 0.8 means "include the best tokens, whose accumulated
       probabilities reach or just surpass 80%". So if there are a few very good candidates, only a few are selected.
-      Setting Top-P to 1, which is 100%, effectively disables it.
+      Setting Top-p to 1, which is 100%, effectively disables it.
 
 - **Temperature** makes the process either more or less random. A Temperature above 1 increasingly "levels the playing
   field", whereas a temperature between 0 and 1 increases the likelihood of the best token candidates even more. A
@@ -126,19 +126,53 @@ probability. Then through the three parameters, the field of candidates is influ
 
 
 ### [Some Examples] [How Do I ...?]
-- [specify full model path of existing model; optionally point to chat model folder?]
-``` py
-from pathlib import Path
+#### Specifying the Model Folder
+The model folder can be set with the `model_path` parameter when creating a `GPT4All` instance. The example below is
+making explicit what happens when it isn't set.
 
-model = GPT4All(model_name='name', model_path=(Path.home() / 'path' / 'to' / 'models'), allow_download=False)
-response = model.generate(...)
-print(response)
-```
+=== "GPT4All Model Folder Example"
+    ``` py
+    from pathlib import Path
+    from gpt4all import GPT4All
+    model = GPT4All(model_name='orca-mini-3b.ggmlv3.q4_0.bin',
+                    model_path=(Path.home() / '.cache' / 'gpt4all'),
+                    allow_download=False)
+    response = model.generate('my favorite 3 fruits are:', temp=0)
+    print(response)
+    ```
+=== "Output"
+    ```
+    My favorite three fruits are apples, bananas and oranges.
+    ```
+
+If you want to point it at the chat GUI's default folder it should be: [TODO: verify this is correct]
+=== "macOS"
+    ``` py
+    from pathlib import Path
+    from gpt4all import GPT4All
+    model = GPT4All(model_name=...
+                    model_path=(Path.home() / 'Library' / 'Application Support' / 'nomic-ai' / 'GPT4All'))
+    ```
+=== "Windows"
+    ``` py
+    import os
+    from pathlib import Path
+    from gpt4all import GPT4All
+    model = GPT4All(model_name=...
+                    model_path=(Path(os.environ['LOCALAPPDATA'] / 'nomic-ai' / 'GPT4All')))
+    ```
+=== "Linux"
+    ``` py
+    from pathlib import Path
+    from gpt4all import GPT4All
+    model = GPT4All(model_name=...
+                    model_path=(Path.home() / '.local' / 'share' / 'nomic-ai' / 'GPT4All'))
+    ```
 
 - [custom templates in session] [example Vicuna variants] [TODO: show default templates here?]
 ``` py
 model = GPT4All(...)
-# many models use triple hash '###' for keywrords, Vicunas are simpler
+# many models use triple hash '###' for keywords, Vicunas are simpler
 system_template = ...
 prompt_template = ...
 with model.chat_session(system_template, prompt_template):
