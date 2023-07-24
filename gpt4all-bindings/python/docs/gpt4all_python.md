@@ -110,19 +110,23 @@ To interact with GPT4All responses as the model generates, use the `streaming=Tr
 - [other parameters can have an influence, too]
 
 The three most influential parameters in generation are Temperature (`temp`), Top-p (`top_p`) and Top-K (`top_k`). In a
-nutshell, during the process of selecting the next token, not just one or a few are considered, but every single one is
-given a probability. Through the three parameters, the field of candidates can be changed.
-
-- Top-p and Top-K both narrow the field:
-    - **Top-K** simply limits the candidates to a fixed number, after sorting by probability. [TODO: how to disable?] 
-    - **Top-p** selects tokens by total probability. E.g. a value of 0.8 means "include the best tokens, whose accumulated
-      probabilities reach or just surpass 80%". So if there are a few very good candidates, only a few are selected.
-      Setting Top-p to 1, which is 100%, effectively disables it.
+nutshell, during the process of selecting the next token, not just one or a few are considered, but every single token
+in the vocabulary is given a probability. Through the three parameters, the field of candidates can be changed.
 
 - **Temperature** makes the process either more or less random. A Temperature above 1 increasingly "levels the playing
   field", whereas a temperature between 0 and 1 increases the likelihood of the best token candidates even more. A
   Temperature of 0 means that the single best token is selected. So that makes the output deterministic. A
   Temperature of 1 effectively disables the parameter.
+
+- Top-p and Top-K both narrow the field:
+    - **Top-K** simply limits the candidates to a fixed number, after sorting by probability. Setting it to a number
+      bigger than the size of the vocabulary deactivates the limit.  
+    - **Top-p** selects tokens by total probability. E.g. a value of 0.8 means "include the best tokens, whose accumulated
+      probabilities reach or just surpass 80%". So if there are a few very good candidates, only a few are selected.
+      Setting Top-p to 1, which is 100%, effectively disables it.
+
+It's recommended to keep at least one of Top-K and Top-p active. Other parameters can influence the generation, as well.
+Make sure to have a look at all their descriptions.
 
 
 ### [Some Examples] [How Do I ...?]
@@ -145,28 +149,33 @@ making explicit what happens when it isn't set.
     My favorite three fruits are apples, bananas and oranges.
     ```
 
-If you want to point it at the chat GUI's default folder it should be: [TODO: verify this is correct]
+If you want to point it at the chat GUI's default folder it should be:
 === "macOS"
     ``` py
     from pathlib import Path
     from gpt4all import GPT4All
-    model = GPT4All(model_name=...
-                    model_path=(Path.home() / 'Library' / 'Application Support' / 'nomic-ai' / 'GPT4All'))
+
+    model_name = 'orca-mini-3b.ggmlv3.q4_0.bin'
+    model_path = Path.home() / 'Library' / 'Application Support' / 'nomic.ai' / 'GPT4All'
+    model = GPT4All(model_name, model_path)
     ```
 === "Windows"
     ``` py
-    import os
     from pathlib import Path
     from gpt4all import GPT4All
-    model = GPT4All(model_name=...
-                    model_path=(Path(os.environ['LOCALAPPDATA'] / 'nomic-ai' / 'GPT4All')))
+    import os
+    model_name = 'orca-mini-3b.ggmlv3.q4_0.bin'
+    model_path = Path(os.environ['LOCALAPPDATA']) / 'nomic.ai' / 'GPT4All'
+    model = GPT4All(model_name, model_path)
     ```
 === "Linux"
     ``` py
     from pathlib import Path
     from gpt4all import GPT4All
-    model = GPT4All(model_name=...
-                    model_path=(Path.home() / '.local' / 'share' / 'nomic-ai' / 'GPT4All'))
+
+    model_name = 'orca-mini-3b.ggmlv3.q4_0.bin'
+    model_path = Path.home() / '.local' / 'share' / 'nomic.ai' / 'GPT4All'
+    model = GPT4All(model_name, model_path)
     ```
 
 - [custom templates in session] [example Vicuna variants] [TODO: show default templates here?]
@@ -183,13 +192,19 @@ with model.chat_session(system_template, prompt_template):
 ```
 
 - [templates in simple generate() calls (no session)]
+
+
 ``` py
 model = GPT4All(...)  # TODO not sure which one yet
-system_template = 'something {0} something; maybe without the placeholder'
+system_template = 'something something; maybe without the placeholder'
 prompt_template = 'something {0} something'
-response = model.generate(
-    system_template.format('instructions go here') + prompt_template.format('hm, maybe no system template?'),
-)
+prompts = ['name 3 colors', 'now name 3 fruits', 'what were the colors again?']
+first_input = system_template + prompt_template.format(prompts[0])
+response = model.generate(first_input)
+print(response)
+for prompt in prompts[1:]:
+    response = model.generate(prompt_template.format(prompt))
+    print(response)
 ```
 
 - [prompt introspection with logging]
@@ -200,12 +215,41 @@ options.
 
 [py-logging]: https://docs.python.org/3/howto/logging.html
 
-``` py
-import logging
-logging.basicConfig(level=logging.INFO)
+=== "GPT4All Prompt Logging Example"
+    ``` py
+    import logging
+    from gpt4all import GPT4All
+    logging.basicConfig(level=logging.INFO)
+    model = GPT4All('nous-hermes-13b.ggmlv3.q4_0.bin')
+    with model.chat_session('You are a geography expert.\nBe terse.',
+                            '### Instruction:\n{0}\n### Response:\n'):
+        response = model.generate('who are you?', temp=0)
+        print(response)
+        response = model.generate('what are your favorite 3 mountains?', temp=0)
+        print(response)
+    ```
+=== "Output"
+    ```
+    INFO:gpt4all.pyllmodel:LLModel.prompt_model -- prompt:
+    You are a geography expert.
+    Be terse.
 
-[TODO: complete example which gives logging output, maybe with templates?]
-```
+    ### Instruction:
+    who are you?
+    ### Response:
+
+    ===/LLModel.prompt_model -- prompt/===
+    I am an AI-powered chatbot designed to assist users with their queries related to geographical information.
+    INFO:gpt4all.pyllmodel:LLModel.prompt_model -- prompt:
+    ### Instruction:
+    what are your favorite 3 mountains?
+    ### Response:
+
+    ===/LLModel.prompt_model -- prompt/===
+    1) Mount Everest - Located in the Himalayas, it is the highest mountain on Earth and a significant challenge for mountaineers.
+    2) Kangchenjunga - This mountain is located in the Himalayas and is the third-highest peak in the world after Mount Everest and K2.
+    3) Lhotse - Located in the Himalayas, it is the fourth highest mountain on Earth and offers a challenging climb for experienced mountaineers.
+    ```
 
 - [example: no internet access - maybe with local models.json?]
 - [TODO: ending generation on a keyword]
