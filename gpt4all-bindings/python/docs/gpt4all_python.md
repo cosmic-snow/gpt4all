@@ -37,9 +37,9 @@ Use the GPT4All `chat_session` context manager to hold chat conversations with t
     ``` py
     model = GPT4All(model_name='orca-mini-3b.ggmlv3.q4_0.bin')
     with model.chat_session():
-        response = model.generate(prompt='hello', top_k=1)
-        response = model.generate(prompt='write me a short poem', top_k=1)
-        response = model.generate(prompt='thank you', top_k=1)
+        response1 = model.generate(prompt='hello', top_k=1)
+        response2 = model.generate(prompt='write me a short poem', top_k=1)
+        response3 = model.generate(prompt='thank you', top_k=1)
         print(model.current_chat_session)
     ```
 === "Output"
@@ -71,9 +71,10 @@ Use the GPT4All `chat_session` context manager to hold chat conversations with t
        }
     ]
     ```
+
 When using GPT4All models in the `chat_session` context:
 
--  Consecutive chat exchanges are taken into account and not discarded until the session ends; as long as the model has capacity.
+- Consecutive chat exchanges are taken into account and not discarded until the session ends; as long as the model has capacity.
 - Internal K/V caches are preserved from previous conversation history, speeding up inference.
 - The model is given a system and prompt template which make it chatty. Depending on `allow_download=True` (default),
   it will obtain the latest version of [models.json] from the repository, which contains specifically tailored templates
@@ -103,7 +104,7 @@ To interact with GPT4All responses as the model generates, use the `streaming=Tr
 ::: gpt4all.gpt4all.GPT4All.generate
 
 
-## [Insert Good Title Here]
+## Examples & Explanations
 ### Influencing Generation 
 The three most influential parameters in generation are Temperature (`temp`), Top-p (`top_p`) and Top-K (`top_k`). In a
 nutshell, during the process of selecting the next token, not just one or a few are considered, but every single token
@@ -125,8 +126,7 @@ The recommendation is keep at least one of Top-K and Top-p active. Other paramet
 well. Make sure to have a look at all their descriptions.
 
 
-### Examples & Explanations
-#### Specifying the Model Folder
+### Specifying the Model Folder
 The model folder can be set with the `model_path` parameter when creating a `GPT4All` instance. The example below is
 making explicit what happens when it isn't set.
 
@@ -176,7 +176,6 @@ If you want to point it at the chat GUI's default folder it should be:
 
 Alternatively, you could also change the module's default model directory:
 
-[TODO:] does this even work with pathlib?
 ``` py
 from pathlib import Path
 import gpt4all.gpt4all
@@ -186,7 +185,10 @@ model = GPT4All('orca-mini-3b.ggmlv3.q4_0.bin')
 ...
 ```
 
+
+### Managing Templates
 - [custom templates in session] [example Vicuna variants] [TODO: show default templates here?]
+
 === "GPT4All Custom Session Templates Example"
     ``` py
     model = GPT4All(...)
@@ -202,11 +204,18 @@ model = GPT4All('orca-mini-3b.ggmlv3.q4_0.bin')
         response2 = model.generate('why is the sky blue?')
         print(response2)
     ```
-=== "Example Output"
+=== "Possible Output"
     ```
-    The color of grass can be attributed to its chlorophyll content, which allows it to absorb light energy from sunlight through photosynthesis. Chlorophyll absorbs blue and red wavelengths of light while reflecting other colors such as yellow and green. This is why the leaves appear green to our eyes.
+    The color of grass can be attributed to its chlorophyll content, which allows it
+    to absorb light energy from sunlight through photosynthesis. Chlorophyll absorbs
+    blue and red wavelengths of light while reflecting other colors such as yellow
+    and green. This is why the leaves appear green to our eyes.
 
-    The color of the sky appears blue due to a phenomenon called Rayleigh scattering, which occurs when sunlight enters Earth's atmosphere and interacts with air molecules such as nitrogen and oxygen. Blue light has shorter wavelength than other colors in the visible spectrum, so it is scattered more easily by these particles, making the sky appear blue to our eyes.
+    The color of the sky appears blue due to a phenomenon called Rayleigh scattering,
+    which occurs when sunlight enters Earth's atmosphere and interacts with air
+    molecules such as nitrogen and oxygen. Blue light has shorter wavelength than
+    other colors in the visible spectrum, so it is scattered more easily by these
+    particles, making the sky appear blue to our eyes.
     ```
 
 - [templates in simple generate() calls (no session)]
@@ -237,7 +246,10 @@ model = GPT4All('orca-mini-3b.ggmlv3.q4_0.bin')
     The colors in my previous response are blue, green and red.
     ```
 
+
+### Introspection
 - [prompt introspection with logging]
+
 A feature which isn't immediately visible is the ability to display the final prompt that gets sent to the model.
 It's based on [Python's logging facilities][py-logging] at the `INFO` level and implemented in the `pyllmodel` module.
 You can activate it for example with a `basicConfig`, although Python's logging infrastructure has many more customisation
@@ -281,24 +293,40 @@ options.
     3) Lhotse - Located in the Himalayas, it is the fourth highest mountain on Earth and offers a challenging climb for experienced mountaineers.
     ```
 
+- [add example with verbosity]
+
 - [example: no internet access - maybe with local models.json?]
 
-``` py
-from gpt4All import GPT4All
-model = GPT4All(..., allow_download=False)  # pick one which should have a template
-# when downloads are disabled, it will use the default templates:
-print(model.system_template)  # TODO
-print(model.prompt_template)  # TODO
-with model.chat_session():
-    print(model.system_template)  # TODO
-    print(model.prompt_template)  # TODO
+=== "GPT4All Default Templates Example"
+    ``` py
+    from gpt4all import GPT4All
+    model = GPT4All(..., allow_download=False)  # TODO: pick one which should have a template
+    # when downloads are disabled, it will use the default templates:
+    print("default system template:", repr(model.config['systemPrompt']))
+    print("default prompt template:", repr(model.config['promptTemplate']))
+    print()
+    # even when inside a session:
+    with model.chat_session():  # TODO:
+        print("session system template:", repr(model.config['systemPrompt']))
+        print("session prompt template:", repr(model.config['promptTemplate']))
+    ```
+=== "Output"
+    ```
+    default system template: ''
+    default prompt template: '### Human: \n{0}\n### Assistant:\n'
 
+    session system template: ''
+    session prompt template: '### Human: \n{0}\n### Assistant:\n'
+
+    ```
+
+### Interrupting Generation
 - [TODO: ending generation on a keyword]
 
 If you know exactly when a model should stop responding, you can add a custom callback, like so:
 
 ``` py
-from gpt4All import GPT4All
+from gpt4all import GPT4All
 model = GPT4All(...)
 
 def stop_on_token_callback(token_id, token_string):
