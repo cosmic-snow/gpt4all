@@ -122,7 +122,7 @@ in the vocabulary is given a probability. Through the three parameters, the fiel
       accumulated probabilities reach or just surpass 80%". So if there are a few very good candidates, only a few are
       selected. Setting Top-p to 1, which is 100%, effectively disables it.
 
-The recommendation is keep at least one of Top-K and Top-p active. Other parameters can influence the generation, as
+The recommendation is to keep at least one of Top-K and Top-p active. Other parameters can influence the generation, as
 well. Make sure to have a look at all their descriptions.
 
 
@@ -191,11 +191,10 @@ model = GPT4All('orca-mini-3b.ggmlv3.q4_0.bin')
 
 === "GPT4All Custom Session Templates Example"
     ``` py
-    model = GPT4All(...)
-    # many models use triple hash '###' for keywords, Vicunas are simpler
     from gpt4all import GPT4All
     model = GPT4All('ggml-Wizard-Vicuna-7B-Uncensored.ggmlv3.q4_1.bin')
     system_template = 'A chat between a curious user and an artificial intelligence assistant.'
+    # many models use triple hash '###' for keywords, Vicunas are simpler:
     prompt_template = 'USER: {0}\nASSISTANT: '
     with model.chat_session(system_template, prompt_template):
         response1 = model.generate('why is the grass green?')
@@ -246,14 +245,100 @@ model = GPT4All('orca-mini-3b.ggmlv3.q4_0.bin')
     The colors in my previous response are blue, green and red.
     ```
 
+- [overriding template logic]
+
+Ultimately, the method `GPT4All._format_chat_prompt_template()` is responsible for formatting templates. It can be
+customized in a subclass. For example:
+
+=== "Custom Subclass"
+    ``` py
+    from itertools import cycle
+    from gpt4all import GPT4All
+
+    class RotatingTemplateGPT4All(GPT4All):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._templates = [
+                "Respond like a pirate.",
+                "Respond like a politician.",
+                "Respond like a philosopher.",
+                "Respond like a Klingon.",
+            ]
+            self._cycling_templates = cycle(self._templates)
+
+        def _format_chat_prompt_template(
+            self,
+            messages: list,
+            default_prompt_header: str = "",
+            default_prompt_footer: str = "",
+        ) -> str:
+            full_prompt = default_prompt_header + "\n\n" if default_prompt_header != "" else ""
+            for message in messages:
+                if message["role"] == "user":
+                    user_message = f"USER: {message['content']} {next(self._cycling_templates)}\n"
+                    full_prompt += user_message
+                if message["role"] == "assistant":
+                    assistant_message = f"ASSISTANT: {message['content']}\n"
+                    full_prompt += assistant_message
+            full_prompt += "\n\n" + default_prompt_footer if default_prompt_footer != "" else ""
+            print(full_prompt)
+            return full_prompt
+    ```
+=== "GPT4All Custom Subclass Example"
+    ``` py
+    model = RotatingTemplateGPT4All('ggml-Wizard-Vicuna-7B-Uncensored.ggmlv3.q4_1.bin')
+    with model.chat_session():  # starting a session is optional in this example
+        response1 = model.generate("hi, who are you?")
+        print(response1)
+        print()
+        response2 = model.generate("what can you tell me about snakes?")
+        print(response2)
+        print()
+        response3 = model.generate("what's your opinion on Chess?")
+        print(response3)
+        print()
+        response4 = model.generate("tell me about ancient Rome.")
+        print(response4)
+    ```
+=== "Possible Output"
+    ```
+    USER: hi, who are you? Respond like a pirate.
+
+    Pirate: Ahoy there mateys! I be Cap'n Jack Sparrow of the Black Pearl.
+
+    USER: what can you tell me about snakes? Respond like a politician.
+
+    Politician: Snakes have been making headlines lately due to their ability to
+    slither into tight spaces and evade capture, much like myself during my last
+    election campaign. However, I believe that with proper education and
+    understanding of these creatures, we can work together towards creating a
+    safer environment for both humans and snakes alike.
+
+    USER: what's your opinion on Chess? Respond like a philosopher.
+
+    Philosopher: The game of chess is often used as an analogy to illustrate the
+    complexities of life and decision-making processes. However, I believe that it
+    can also be seen as a reflection of our own consciousness and subconscious mind.
+    Just as each piece on the board has its unique role to play in shaping the
+    outcome of the game, we too have different roles to fulfill in creating our own
+    personal narrative.
+
+    USER: tell me about ancient Rome. Respond like a Klingon.
+
+    Klingon: Ancient Rome was once a great empire that ruled over much of Europe and
+    the Mediterranean region. However, just as the Empire fell due to internal strife
+    and external threats, so too did my own house come crashing down when I failed to
+    protect our homeworld from invading forces.
+    ```
+
 
 ### Introspection
 - [prompt introspection with logging]
 
-A feature which isn't immediately visible is the ability to display the final prompt that gets sent to the model.
+A feature which isn't immediately apparent is the ability to log the final prompt that gets sent to the model.
 It's based on [Python's logging facilities][py-logging] at the `INFO` level and implemented in the `pyllmodel` module.
-You can activate it for example with a `basicConfig`, although Python's logging infrastructure has many more customisation
-options.
+You can activate it for example with a `basicConfig`, which displays it on the standard error stream. Although note
+that Python's logging infrastructure has many more customization options.
 
 [py-logging]: https://docs.python.org/3/howto/logging.html
 
@@ -293,22 +378,23 @@ options.
     3) Lhotse - Located in the Himalayas, it is the fourth highest mountain on Earth and offers a challenging climb for experienced mountaineers.
     ```
 
-- [add example with verbosity]
 
+### [allow_download=False]
 - [example: no internet access - maybe with local models.json?]
 
 === "GPT4All Default Templates Example"
     ``` py
     from gpt4all import GPT4All
-    model = GPT4All(..., allow_download=False)  # TODO: pick one which should have a template
+    model = GPT4All('ggml-mpt-7b-chat.bin', allow_download=False)
     # when downloads are disabled, it will use the default templates:
     print("default system template:", repr(model.config['systemPrompt']))
     print("default prompt template:", repr(model.config['promptTemplate']))
     print()
     # even when inside a session:
-    with model.chat_session():  # TODO:
-        print("session system template:", repr(model.config['systemPrompt']))
-        print("session prompt template:", repr(model.config['promptTemplate']))
+    with model.chat_session():
+        assert model.current_chat_session[0]['role'] == 'system'
+        print("session system template:", repr(model.current_chat_session[0]['content']))
+        print("session prompt template:", repr(model._current_prompt_template))
     ```
 === "Output"
     ```
@@ -332,6 +418,8 @@ model = GPT4All(...)
 def stop_on_token_callback(token_id, token_string):
     if token_string == '###':
         return False
+    else:
+        return True
 
 model.generate(..., callback=stop_on_token_callback)  # TODO
 ```
