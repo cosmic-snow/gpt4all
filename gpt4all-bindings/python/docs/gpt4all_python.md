@@ -379,8 +379,13 @@ that Python's logging infrastructure has many more customization options.
     ```
 
 
-### [allow_download=False]
+### Without Online Connectivity
+- [allow_download=False]
 - [example: no internet access - maybe with local models.json?]
+
+To prevent GPT4All from accessing online resources, instantiate it with `allow_download=False`. This will disable
+both the download of missing models and [models.json], which contains information about them. Not least of which
+are the model specific system and prompt templates. So in that case, predefined templates are used instead:
 
 === "GPT4All Default Templates Example"
     ``` py
@@ -403,8 +408,30 @@ that Python's logging infrastructure has many more customization options.
 
     session system template: ''
     session prompt template: '### Human: \n{0}\n### Assistant:\n'
-
     ```
+
+- TODO: this is not possible right now because of two static methods, one calling the other (can't replace class with self)
+- TODO: probably need to make an example which overrides retrieve_model instead, or leave it out for now
+
+It's possible to use a local [models.json] by slightly adjusting the logic in a subclass:
+
+``` py
+import json
+from gpt4all import GPT4All
+MODELS_JSON_PATH = ...
+
+class OfflineGPT4All(GPT4All):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    @staticmethod
+    def list_models() -> list:
+        with open(MODELS_JSON_PATH, 'r', encoding='utf-8') as models_json:
+            return json.load(models_json)
+
+model = OfflineGPT4All('orca-mini-3b.ggmlv3.q4_0.bin', allow_download=False)
+...
+```
 
 ### Interrupting Generation
 - [TODO: ending generation on a keyword]
